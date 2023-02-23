@@ -74,3 +74,59 @@ export async function getAllDomainInfos() {
     return Domains.getRentCost(name: name, duration: duration)
   }
   `;
+
+  export async function getMyDomainInfos(addr) {
+    return fcl.query({
+      cadence: GET_MY_DOMAIN_INFOS,
+      args: (arg, t) => [arg(addr, t.Address)],
+    });
+  }
+  
+  const GET_MY_DOMAIN_INFOS = `
+  import Domains from 0xDomains
+  import NonFungibleToken from 0xNonFungibleToken
+  
+  pub fun main(account: Address): [Domains.DomainInfo] {
+      let capability = getAccount(account).getCapability<&Domains.Collection{NonFungibleToken.CollectionPublic, Domains.CollectionPublic}>(Domains.DomainsPublicPath)
+      let collection = capability.borrow() ?? panic("Collection capability could not be borrowed")
+  
+      let ids = collection.getIDs()
+      let infos: [Domains.DomainInfo] = []
+  
+      for id in ids {
+          let domain = collection.borrowDomain(id: id!)
+          let domainInfo = domain.getInfo()
+          infos.append(domainInfo)
+      }
+  
+      return infos
+  }
+  `;
+
+  export async function getDomainInfoByNameHash(addr, nameHash) {
+    return fcl.query({
+      cadence: GET_DOMAIN_BY_NAMEHASH,
+      args: (arg, t) => [arg(addr, t.Address), arg(nameHash, t.String)],
+    });
+  }
+  
+  const GET_DOMAIN_BY_NAMEHASH = `
+  import Domains from 0xDomains
+  import NonFungibleToken from 0xNonFungibleToken
+  
+  pub fun main(account: Address, nameHash: String): Domains.DomainInfo {
+    let capability = getAccount(account).getCapability<&Domains.Collection{NonFungibleToken.CollectionPublic, Domains.CollectionPublic}>(Domains.DomainsPublicPath)
+    let collection = capability.borrow() ?? panic("Collection capability could not be borrowed")
+  
+    let id = Domains.nameHashToIDs[nameHash]
+    if id == nil {
+      panic("Domain not found")
+    }
+  
+    let domain = collection.borrowDomain(id: id!)
+    let domainInfo = domain.getInfo()
+    return domainInfo
+  }
+  `;
+
+  
