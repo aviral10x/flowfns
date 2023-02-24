@@ -14,7 +14,7 @@ export default function Navbar() {
       <Link href="/purchase">Purchase</Link>
       <Link href="/manage">Manage</Link>
       <button onClick={currentUser.addr ? logOut : logIn}>
-        {currentUser.addr ? "Log Out" : "Login"}
+        {currentUser.addr ? `${currentUser.addr}` : "Login"}
       </button>
     </div>
   );
