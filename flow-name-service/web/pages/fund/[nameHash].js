@@ -5,7 +5,7 @@ import * as fcl from "@onflow/fcl";
 import Head from "next/head";
 import Navbar from "../../components/Navbar";
 import { getDomainInfoByNameHash, getRentCost } from "../../flow/scripts";
-import styles from "../../styles/ManageDomain.module.css";
+import styles from "../../styles/Fund.module.css";
 import {
   renewDomain,
   updateAddressForDomain,
@@ -15,7 +15,7 @@ import {
 // constant representing seconds per year
 const SECONDS_PER_YEAR = 365 * 24 * 60 * 60;
 
-export default function ManageDomain() {
+export default function Fund() {
   // Use AuthContext to gather data for current user
   const { currentUser, isInitialized } = useAuth();
 

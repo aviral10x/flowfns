@@ -11,7 +11,7 @@ export default function Navbar() {
   return (
     <div className={styles.navbar}>
       <Link href="/">Home</Link>
-      <Link href="/purchase">Purchase</Link>
+      <Link href="/purchase">Create Grant</Link>
       <Link href="/manage">Manage</Link>
       <button onClick={currentUser.addr ? logOut : logIn}>
         {currentUser.addr ? `${currentUser.addr}` : "Login"}

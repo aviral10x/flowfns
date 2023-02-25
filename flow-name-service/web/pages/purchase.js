@@ -6,6 +6,13 @@ import { useAuth } from "../contexts/AuthContext";
 import { checkIsAvailable, getRentCost } from "../flow/scripts";
 import { initializeAccount, registerDomain } from "../flow/transactions";
 import styles from "../styles/Purchase.module.css";
+import {
+    renewDomain,
+    updateAddressForDomain,
+    updateBioForDomain,
+  } from "../flow/transactions";
+import { useRouter } from "next/router";
+
 
 // Maintain a constant for seconds per year
 const SECONDS_PER_YEAR = 365 * 24 * 60 * 60;
@@ -22,6 +29,16 @@ export default function Purchase() {
   const [cost, setCost] = useState(0.0);
   // Loading state
   const [loading, setLoading] = useState(false);
+
+  const [category, setCategory] = useState("");
+
+  const [bio, setBio] = useState("");
+
+  const [domainInfo, setDomainInfo] = useState();
+
+
+  const router = useRouter();
+
 
   // Function to initialize a user's account if not already initialized
   async function initialize() {
@@ -48,12 +65,51 @@ export default function Purchase() {
       const duration = (years * SECONDS_PER_YEAR).toFixed(1).toString();
       const txId = await registerDomain(name, duration);
       await fcl.tx(txId).onceSealed();
+
+ 
+        // const timer =  setTimeout(async() => {
+        //     const txId1 = await updateBioForDomain(router.query.nameHash, bio);
+        //     await fcl.tx(txId1).onceSealed();
+        //     await loadDomainInfo();
+        // }, 5000);
+        // return () => clearTimeout(timer);
+      
+
+     
+
     } catch (error) {
       console.error(error);
     } finally {
       setLoading(false);
     }
   }
+
+
+//   async function updateBio() {
+//     try {
+//       setLoading(true);
+
+//     } catch (error) {
+//       console.error(error);
+//     } finally {
+//       setLoading(false);
+//     }
+//   }
+
+
+  async function loadDomainInfo() {
+    try {
+      const info = await getDomainInfoByNameHash(
+        currentUser.addr,
+        router.query.nameHash
+      );
+      console.log(info);
+      setDomainInfo(info);
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
 
   // Function which calculates cost of purchase as user 
   // updates the name and duration
@@ -95,10 +151,39 @@ export default function Purchase() {
               placeholder="learnweb3"
               onChange={(e) => setName(e.target.value)}
             />
-            <span>.fns</span>
+            {/* <span>.fns</span> */}
           </div>
-
           <div className={styles.inputGroup}>
+            <span>Select Categories: </span>
+            <input
+              list="categories"
+              placeholder="Categories"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+            //   multiple
+            />
+            <datalist id="categories" >
+  <option value="Internet Explorer"/>
+  <option value="Firefox"/>
+  <option value="Google Chrome"/>
+  <option value="Opera"/>
+  <option value="Safari"/>
+</datalist>
+            {/* <span>years</span> */}
+          </div>
+          {/* <div className={styles.inputGroup}>
+            <span>Update Bio: </span>
+            <input
+              type="text"
+              placeholder="Lorem ipsum..."
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+            />
+            {/* <button onClick={updateBio} disabled={loading}>
+              Update
+            </button> */}
+          {/* </div>  */}
+          {/* <div className={styles.inputGroup}>
             <span>Duration: </span>
             <input
               type="number"
@@ -107,7 +192,7 @@ export default function Purchase() {
               onChange={(e) => setYears(e.target.value)}
             />
             <span>years</span>
-          </div>
+          </div> */}
           <button onClick={purchase}>Purchase</button>
           <p>Cost: {cost} FLOW</p>
           <p>{loading ? "Loading..." : null}</p>

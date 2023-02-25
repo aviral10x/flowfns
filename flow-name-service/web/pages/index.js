@@ -1,4 +1,6 @@
 import Head from "next/head";
+import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
 import { getAllDomainInfos } from "../flow/scripts";
@@ -31,7 +33,7 @@ export default function Home() {
       <Navbar />
 
       <main className={styles.main}>
-        <h1>All Registered Domains</h1>
+        <h1>All Registered Grants</h1>
 
         <div className={styles.domainsContainer}>
           {
@@ -42,7 +44,10 @@ export default function Home() {
             // Otherwise, loop over the array, and render information
             // about each domain
             domainInfos.map((di, idx) => (
+              <Link href={`/fund/${di.nameHash}`}>
+
               <div className={styles.domainInfo} key={idx}>
+                {/* <Image src={di.bio} width="20" height="20" /> */}
                 <p>
                   {di.id} - {di.name}
                 </p>
@@ -59,6 +64,8 @@ export default function Home() {
                   {new Date(parseInt(di.expiresAt) * 1000).toLocaleDateString()}
                 </p>
               </div>
+              </Link>
+
             ))
           )}
         </div>

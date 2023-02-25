@@ -6,16 +6,12 @@ import Head from "next/head";
 import Navbar from "../../components/Navbar";
 import { getDomainInfoByNameHash, getRentCost } from "../../flow/scripts";
 import styles from "../../styles/ManageDomain.module.css";
-import {
-  renewDomain,
-  updateAddressForDomain,
-  updateBioForDomain,
-} from "../../flow/transactions";
+
 
 // constant representing seconds per year
 const SECONDS_PER_YEAR = 365 * 24 * 60 * 60;
 
-export default function ManageDomain() {
+export default function Fund() {
   // Use AuthContext to gather data for current user
   const { currentUser, isInitialized } = useAuth();
 
@@ -51,56 +47,11 @@ export default function ManageDomain() {
     }
   }
 
-  // Function which updates the bio transaction
-  async function updateBio() {
-    try {
-      setLoading(true);
-      const txId = await updateBioForDomain(router.query.nameHash, bio);
-      await fcl.tx(txId).onceSealed();
-      await loadDomainInfo();
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  }
 
-  // Function which updates the address transaction
-  async function updateAddress() {
-    try {
-      setLoading(true);
-      const txId = await updateAddressForDomain(
-        router.query.nameHash,
-        linkedAddr
-      );
-      await fcl.tx(txId).onceSealed();
-      await loadDomainInfo();
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  }
 
-  // Function which runs the renewal transaction
-  async function renew() {
-    try {
-      setLoading(true);
-      if (renewFor <= 0)
-        throw new Error("Must be renewing for at least one year");
-      const duration = (renewFor * SECONDS_PER_YEAR).toFixed(1).toString();
-      const txId = await renewDomain(
-        domainInfo.name.replace(".fns", ""),
-        duration
-      );
-      await fcl.tx(txId).onceSealed();
-      await loadDomainInfo();
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  }
+
+
+
 
   // Function which calculates cost of renewal
   async function getCost() {
