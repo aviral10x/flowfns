@@ -44,12 +44,11 @@ export default function Home() {
             // Otherwise, loop over the array, and render information
             // about each domain
             domainInfos.map((di, idx) => (
-              <Link href={`/fund/${di.nameHash}`}>
 
               <div className={styles.domainInfo} key={idx}>
                 {/* <Image src={di.bio} width="20" height="20" /> */}
                 <p>
-                  {di.id} - {di.name}
+                  {di.id} - {di.name} - {di.nameHash}
                 </p>
                 <p>Owner: {di.owner}</p>
                 <p>Linked Address: {di.address ? di.address : "None"}</p>
@@ -64,7 +63,6 @@ export default function Home() {
                   {new Date(parseInt(di.expiresAt) * 1000).toLocaleDateString()}
                 </p>
               </div>
-              </Link>
 
             ))
           )}

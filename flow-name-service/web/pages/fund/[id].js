@@ -6,6 +6,8 @@ import Head from "next/head";
 import Navbar from "../../components/Navbar";
 import { getDomainInfoByNameHash, getRentCost } from "../../flow/scripts";
 import styles from "../../styles/Fund.module.css";
+import { getAllDomainInfos } from "../../flow/scripts";
+
 import {
   renewDomain,
   updateAddressForDomain,
@@ -18,6 +20,7 @@ const SECONDS_PER_YEAR = 365 * 24 * 60 * 60;
 export default function Fund() {
   // Use AuthContext to gather data for current user
   const { currentUser, isInitialized } = useAuth();
+  const [domainInfos, setDomainInfos] = useState([]);
 
   // Next Router to get access to `nameHash` query parameter
   const router = useRouter();
@@ -41,7 +44,7 @@ export default function Fund() {
   async function loadDomainInfo() {
     try {
       const info = await getDomainInfoByNameHash(
-        currentUser.addr,
+        domainInfo.owner,
         router.query.nameHash
       );
       console.log(info);
@@ -51,82 +54,32 @@ export default function Fund() {
     }
   }
 
-  // Function which updates the bio transaction
-  async function updateBio() {
-    try {
-      setLoading(true);
-      const txId = await updateBioForDomain(router.query.nameHash, bio);
-      await fcl.tx(txId).onceSealed();
-      await loadDomainInfo();
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    async function fetchDomains() {
+      const domains = await getAllDomainInfos();
+      setDomainInfos(domains);
     }
-  }
 
-  // Function which updates the address transaction
-  async function updateAddress() {
-    try {
-      setLoading(true);
-      const txId = await updateAddressForDomain(
-        router.query.nameHash,
-        linkedAddr
-      );
-      await fcl.tx(txId).onceSealed();
-      await loadDomainInfo();
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  }
+    fetchDomains();
+  }, []);
 
-  // Function which runs the renewal transaction
-  async function renew() {
-    try {
-      setLoading(true);
-      if (renewFor <= 0)
-        throw new Error("Must be renewing for at least one year");
-      const duration = (renewFor * SECONDS_PER_YEAR).toFixed(1).toString();
-      const txId = await renewDomain(
-        domainInfo.name.replace(".fns", ""),
-        duration
-      );
-      await fcl.tx(txId).onceSealed();
-      await loadDomainInfo();
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  }
+  
 
-  // Function which calculates cost of renewal
-  async function getCost() {
-    if (domainInfo && domainInfo.name.replace(".fns", "").length > 0 && renewFor > 0) {
-      const duration = (renewFor * SECONDS_PER_YEAR).toFixed(1).toString();
-      const c = await getRentCost(
-        domainInfo.name.replace(".fns", ""),
-        duration
-      );
-      setCost(c);
-    }
-  }
+
+
+
+
 
   // Load domain info if user is initialized and page is loaded
   useEffect(() => {
-    if (router && router.query && isInitialized) {
+    if (router && router.query ) {
       loadDomainInfo();
     }
   }, [router]);
 
-  // Calculate cost everytime domainInfo or duration changes
-  useEffect(() => {
-    getCost();
-  }, [domainInfo, renewFor]);
 
-  if (!domainInfo) return null;
+
+
 
   return (
     <div className={styles.container}>
@@ -170,9 +123,7 @@ export default function Fund() {
               value={bio}
               onChange={(e) => setBio(e.target.value)}
             />
-            <button onClick={updateBio} disabled={loading}>
-              Update
-            </button>
+      
           </div>
 
           <br />

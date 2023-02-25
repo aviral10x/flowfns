@@ -7,40 +7,64 @@ import {useAuth} from "../../contexts/AuthContext";
 import {getMyDomainInfos} from "../../flow/scripts";
 import {initializeAccount} from "../../flow/transactions";
 import styles from "../../styles/Manage.module.css";
+import { getAllDomainInfos } from "../../flow/scripts";
+
 
 export default function Home() {
   // Use the AuthContext to track user data
-  const { currentUser, isInitialized, checkInit } = useAuth();
+  const { currentUser } = useAuth();
   const [domainInfos, setDomainInfos] = useState([]);
+  const { isInitialized, checkInit } = useAuth();
+  // State Variable to keep track of the domain name the user wants
+  const [name, setName] = useState("");
+  // State variable to keep track of how many years 
+  // the user wants to rent the domain for
+  const [years, setYears] = useState(1);
+  // State variable to keep track of the cost of this purchase
+  const [cost, setCost] = useState(0.0);
+  // Loading state
+  const [loading, setLoading] = useState(false);
 
-  // Function to initialize the user's account if not already initialized
-  async function initialize() {
+  const [category, setCategory] = useState("");
+
+  const [bio, setBio] = useState("");
+
+  const [domainInfo, setDomainInfo] = useState();
+
+
+
+  async function fund() {
     try {
-      const txId = await initializeAccount();
+      setLoading(true);
+
+      const txId = await registerDomain(name, duration);
       await fcl.tx(txId).onceSealed();
-      await checkInit();
+
+ 
+        // const timer =  setTimeout(async() => {
+        //     const txId1 = await updateBioForDomain(router.query.nameHash, bio);
+        //     await fcl.tx(txId1).onceSealed();
+        //     await loadDomainInfo();
+        // }, 5000);
+        // return () => clearTimeout(timer);
+      
+
+     
+
     } catch (error) {
       console.error(error);
+    } finally {
+      setLoading(false);
     }
   }
-
-  // Function to fetch the domains owned by the currentUser
-  async function fetchMyDomains() {
-    try {
-      const domains = await getMyDomainInfos(currentUser.addr);
-      setDomainInfos(domains);
-    } catch (error) {
-      console.error(error.message);
-    }
-  }
-
-  // Load user-owned domains if they are initialized
-  // Run if value of `isInitialized` changes
   useEffect(() => {
-    if (isInitialized) {
-      fetchMyDomains();
+    async function fetchDomains() {
+      const domains = await getAllDomainInfos();
+      setDomainInfos(domains);
     }
-  }, [isInitialized]);
+
+    fetchDomains();
+  }, []);
 
   return (
     <div className={styles.container}>
@@ -55,22 +79,18 @@ export default function Home() {
       <main className={styles.main}>
         <h1>Your Registered Domains</h1>
 
-        {!isInitialized ? (
-          <>
-            <p>Your account has not been initialized yet</p>
-            <button onClick={initialize}>Initialize Account</button>
-          </>
-        ) : (
+        {
           <div className={styles.domainsContainer}>
-            {domainInfos.length === 0 ? (
-              <p>You have not registered any FNS Domains yet</p>
-            ) : (
+            {
               domainInfos.map((di, idx) => (
-                <Link href={`/fund/${di.nameHash}`}>
+                   
                   <div className={styles.domainInfo} key={idx}>
+                <Link href={`/fund/${di.id}`}>
+
                     <p>
                       {di.id} - {di.name}
                     </p>
+                </Link>
                     <p>Owner: {di.owner}</p>
                     <p>Linked Address: {di.address ? di.address : "None"}</p>
                     <p>Bio: {di.bio ? di.bio : "None"}</p>
@@ -86,12 +106,13 @@ export default function Home() {
                         parseInt(di.expiresAt) * 1000
                       ).toLocaleDateString()}
                     </p>
+                    <button  >Fund </button>
+
                   </div>
-                </Link>
               ))
-            )}
+            }
           </div>
-        )}
+        }
       </main>
     </div>
   );

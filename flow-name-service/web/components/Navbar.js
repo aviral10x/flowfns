@@ -13,6 +13,7 @@ export default function Navbar() {
       <Link href="/">Home</Link>
       <Link href="/purchase">Create Grant</Link>
       <Link href="/manage">Manage</Link>
+      <Link href="/fund">Fund</Link>
       <button onClick={currentUser.addr ? logOut : logIn}>
         {currentUser.addr ? `${currentUser.addr}` : "Login"}
       </button>

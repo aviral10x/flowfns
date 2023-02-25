@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import Head from "next/head";
 import Navbar from "../components/Navbar";
 import { useAuth } from "../contexts/AuthContext";
-import { checkIsAvailable, getRentCost } from "../flow/scripts";
+import { checkIsAvailable, getRentCost,getVaultBalance } from "../flow/scripts";
 import { initializeAccount, registerDomain } from "../flow/transactions";
 import styles from "../styles/Purchase.module.css";
 import {
@@ -49,6 +49,7 @@ export default function Purchase() {
       await fcl.tx(txId).onceSealed();
       // Recheck account initialization after transaction goes through
       await checkInit();
+      
     } catch (error) {
       console.error(error);
     }
@@ -75,7 +76,7 @@ export default function Purchase() {
         // return () => clearTimeout(timer);
       
 
-     
+     console.log(getVaultBalance())
 
     } catch (error) {
       console.error(error);
