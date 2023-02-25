@@ -15,7 +15,6 @@ import {
 } from "../../flow/transactions";
 
 // constant representing seconds per year
-const SECONDS_PER_YEAR = 365 * 24 * 60 * 60;
 
 export default function Fund() {
   // Use AuthContext to gather data for current user
@@ -92,7 +91,7 @@ export default function Fund() {
       <Navbar />
 
       <main className={styles.main}>
-        <div>
+        {/* <div>
           <h1>{domainInfo.name}</h1>
           <p>ID: {domainInfo.id}</p>
           <p>Owner: {domainInfo.owner}</p>
@@ -111,7 +110,7 @@ export default function Fund() {
           <hr />
           <p>Bio: {domainInfo.bio ? domainInfo.bio : "Not Set"}</p>
           <p>Address: {domainInfo.address ? domainInfo.address : "Not Set"}</p>
-        </div>
+        </div> */}
 
         <div>
           <h1>Update</h1>
