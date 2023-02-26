@@ -8,13 +8,13 @@
   padding: 0 4em;
 }
 
-.domainsContainer {
+.grantsContainer {
   display: flex;
   gap: 4em;
   flex-wrap: wrap;
 }
 
-.domainInfo {
+.grantInfo {
   padding: 2em;
   color: antiquewhite;
   background-color: darkslategray;

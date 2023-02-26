@@ -1,9 +1,9 @@
-import Domains from "../contracts/Domains.cdc"
+import Grants from "../contracts/Grants.cdc"
 
 transaction() {
-    let registrar: &Domains.Registrar
+    let registrar: &Grants.Registrar
     prepare(account: AuthAccount) {
-        self.registrar = account.borrow<&Domains.Registrar>(from: Domains.RegistrarStoragePath)
+        self.registrar = account.borrow<&Grants.Registrar>(from: Grants.RegistrarStoragePath)
             ?? panic("Could not borrow Registrar")
     }
 

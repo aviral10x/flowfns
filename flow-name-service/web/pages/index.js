@@ -3,30 +3,30 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
-import { getAllDomainInfos } from "../flow/scripts";
+import { getAllGrantInfos } from "../flow/scripts";
 import styles from "../styles/Home.module.css";
 
 export default function Home() {
-  // Create a state variable for all the DomainInfo structs
+  // Create a state variable for all the GrantInfo structs
   // Initialize it to an empty array
-  const [domainInfos, setDomainInfos] = useState([]);
+  const [grantInfos, setGrantInfos] = useState([]);
 
-  // Load all the DomainInfo's by running the Cadence script
+  // Load all the GrantInfo's by running the Cadence script
   // when the page is loaded
   useEffect(() => {
-    async function fetchDomains() {
-      const domains = await getAllDomainInfos();
-      setDomainInfos(domains);
+    async function fetchGrants() {
+      const grants = await getAllGrantInfos();
+      setGrantInfos(grants);
     }
 
-    fetchDomains();
+    fetchGrants();
   }, []);
 
   return (
     <div className={styles.container}>
       <Head>
-        <title>Flow Name Service</title>
-        <meta name="description" content="Flow Name Service" />
+        <title>Raise</title>
+        <meta name="description" content="Raise" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
@@ -35,17 +35,17 @@ export default function Home() {
       <main className={styles.main}>
         <h1>All Registered Grants</h1>
 
-        <div className={styles.domainsContainer}>
+        <div className={styles.grantsContainer}>
           {
-            // If no domains were found, display a message highlighting that
-            domainInfos.length === 0 ? (
-            <p>No FNS Domains have been registered yet</p>
+            // If no grants were found, display a message highlighting that
+            grantInfos.length === 0 ? (
+            <p>No Grants have been registered yet</p>
           ) : (
             // Otherwise, loop over the array, and render information
-            // about each domain
-            domainInfos.map((di, idx) => (
+            // about each grant
+            grantInfos.map((di, idx) => (
 
-              <div className={styles.domainInfo} key={idx}>
+              <div className={styles.grantInfo} key={idx}>
                 {/* <Image src={di.bio} width="20" height="20" /> */}
                 <p>
                   {di.id} - {di.name} - {di.nameHash}

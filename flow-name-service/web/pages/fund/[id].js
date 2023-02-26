@@ -4,14 +4,14 @@ import { useAuth } from "../../contexts/AuthContext";
 import * as fcl from "@onflow/fcl";
 import Head from "next/head";
 import Navbar from "../../components/Navbar";
-import { getDomainInfoByNameHash, getRentCost } from "../../flow/scripts";
+import { getGrantInfoByNameHash, getRentCost } from "../../flow/scripts";
 import styles from "../../styles/Fund.module.css";
-import { getAllDomainInfos } from "../../flow/scripts";
+import { getAllGrantInfos } from "../../flow/scripts";
 
 import {
-  renewDomain,
-  updateAddressForDomain,
-  updateBioForDomain,
+  renewGrant,
+  updateAddressForGrant,
+  updateBioForGrant,
 } from "../../flow/transactions";
 
 // constant representing seconds per year
@@ -19,12 +19,12 @@ import {
 export default function Fund() {
   // Use AuthContext to gather data for current user
   const { currentUser, isInitialized } = useAuth();
-  const [domainInfos, setDomainInfos] = useState([]);
+  const [grantInfos, setGrantInfos] = useState([]);
 
   // Next Router to get access to `nameHash` query parameter
   const router = useRouter();
-  // State variable to store the DomainInfo
-  const [domainInfo, setDomainInfo] = useState();
+  // State variable to store the GrantInfo
+  const [grantInfo, setGrantInfo] = useState();
   // State variable to store the bio given by user
   const [bio, setBio] = useState("");
   // State variable to store the address given by user
@@ -39,27 +39,27 @@ export default function Fund() {
 
 
     
-  // Function to load the domain info
-  async function loadDomainInfo() {
+  // Function to load the grant info
+  async function loadGrantInfo() {
     try {
-      const info = await getDomainInfoByNameHash(
-        domainInfo.owner,
+      const info = await getGrantInfoByNameHash(
+        grantInfo.owner,
         router.query.nameHash
       );
       console.log(info);
-      setDomainInfo(info);
+      setGrantInfo(info);
     } catch (error) {
       console.error(error);
     }
   }
 
   useEffect(() => {
-    async function fetchDomains() {
-      const domains = await getAllDomainInfos();
-      setDomainInfos(domains);
+    async function fetchGrants() {
+      const grants = await getAllGrantInfos();
+      setGrantInfos(grants);
     }
 
-    fetchDomains();
+    fetchGrants();
   }, []);
 
   
@@ -69,10 +69,10 @@ export default function Fund() {
 
 
 
-  // Load domain info if user is initialized and page is loaded
+  // Load grant info if user is initialized and page is loaded
   useEffect(() => {
     if (router && router.query ) {
-      loadDomainInfo();
+      loadGrantInfo();
     }
   }, [router]);
 
@@ -83,7 +83,7 @@ export default function Fund() {
   return (
     <div className={styles.container}>
       <Head>
-        <title>Flow Name Service - Manage Domain</title>
+        <title>Flow Name Service - Manage Grant</title>
         <meta name="description" content="Flow Name Service" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
@@ -92,24 +92,24 @@ export default function Fund() {
 
       <main className={styles.main}>
         {/* <div>
-          <h1>{domainInfo.name}</h1>
-          <p>ID: {domainInfo.id}</p>
-          <p>Owner: {domainInfo.owner}</p>
+          <h1>{grantInfo.name}</h1>
+          <p>ID: {grantInfo.id}</p>
+          <p>Owner: {grantInfo.owner}</p>
           <p>
             Created At:{" "}
             {new Date(
-              parseInt(domainInfo.createdAt) * 1000
+              parseInt(grantInfo.createdAt) * 1000
             ).toLocaleDateString()}
           </p>
           <p>
             Expires At:{" "}
             {new Date(
-              parseInt(domainInfo.expiresAt) * 1000
+              parseInt(grantInfo.expiresAt) * 1000
             ).toLocaleDateString()}
           </p>
           <hr />
-          <p>Bio: {domainInfo.bio ? domainInfo.bio : "Not Set"}</p>
-          <p>Address: {domainInfo.address ? domainInfo.address : "Not Set"}</p>
+          <p>Bio: {grantInfo.bio ? grantInfo.bio : "Not Set"}</p>
+          <p>Address: {grantInfo.address ? grantInfo.address : "Not Set"}</p>
         </div> */}
 
         <div>
@@ -160,7 +160,7 @@ export default function Fund() {
             />
             <span> years</span>
             <button onClick={renew} disabled={loading}>
-              Renew Domain
+              Renew Grant
             </button>
           </div>
           <p>Cost: {cost} FLOW</p>

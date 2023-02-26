@@ -8,36 +8,36 @@ export async function checkIsInitialized(addr) {
 }
 
 const IS_INITIALIZED = `
-import Domains from 0xDomains
+import Grants from 0xGrants
 import NonFungibleToken from 0xNonFungibleToken
 
 pub fun main(account: Address): Bool {
-    let capability = getAccount(account).getCapability<&Domains.Collection{NonFungibleToken.CollectionPublic, Domains.CollectionPublic}>(Domains.DomainsPublicPath)
+    let capability = getAccount(account).getCapability<&Grants.Collection{NonFungibleToken.CollectionPublic, Grants.CollectionPublic}>(Grants.GrantsPublicPath)
     return capability.check()
 }
 `;
 
-export async function getAllDomainInfos() {
+export async function getAllGrantInfos() {
     return fcl.query({
-      cadence: GET_ALL_DOMAIN_INFOS,
+      cadence: GET_ALL_GRANT_INFOS,
     });
   }
   
-  const GET_ALL_DOMAIN_INFOS = `
-  import Domains from 0xDomains
+  const GET_ALL_GRANT_INFOS = `
+  import Grants from 0xGrants
   
-  pub fun main(): [Domains.DomainInfo] {
-      let allOwners = Domains.getAllOwners()
-      let infos: [Domains.DomainInfo] = []
+  pub fun main(): [Grants.GrantInfo] {
+      let allOwners = Grants.getAllOwners()
+      let infos: [Grants.GrantInfo] = []
   
       for nameHash in allOwners.keys {
-          let publicCap = getAccount(allOwners[nameHash]!).getCapability<&Domains.Collection{Domains.CollectionPublic}>(Domains.DomainsPublicPath)
+          let publicCap = getAccount(allOwners[nameHash]!).getCapability<&Grants.Collection{Grants.CollectionPublic}>(Grants.GrantsPublicPath)
           let collection = publicCap.borrow()!
-          let id = Domains.nameHashToIDs[nameHash]
+          let id = Grants.nameHashToIDs[nameHash]
           if id != nil {
-              let domain = collection.borrowDomain(id: id!)
-              let domainInfo = domain.getInfo()
-              infos.append(domainInfo)
+              let grant = collection.borrowGrant(id: id!)
+              let grantInfo = grant.getInfo()
+              infos.append(grantInfo)
           }
       }
   
@@ -53,10 +53,10 @@ export async function getAllDomainInfos() {
   }
   
   const CHECK_IS_AVAILABLE = `
-  import Domains from 0xDomains
+  import Grants from 0xGrants
   
   pub fun main(name: String): Bool {
-    return Domains.isAvailable(nameHash: name)
+    return Grants.isAvailable(nameHash: name)
   }
   `;
   
@@ -68,10 +68,10 @@ export async function getAllDomainInfos() {
   }
   
   const GET_RENT_COST = `
-  import Domains from 0xDomains
+  import Grants from 0xGrants
   
   pub fun main(name: String, duration: UFix64): UFix64 {
-    return Domains.getRentCost(name: name, duration: duration)
+    return Grants.getRentCost(name: name, duration: duration)
   }
   `;
 
@@ -84,63 +84,84 @@ export async function getAllDomainInfos() {
 //   }
 
 //   const GET_VAULT_BALANCE = `
-//   import Domains from 0xDomains
+//   import Grants from 0xGrants
 
-//   let cap = self.account.getCapability<&Domains.Registrar{Domains.RegistrarPublic}>(Domains.RegistrarPublicPath)
+//   let cap = self.account.getCapability<&Grants.Registrar{Grants.RegistrarPublic}>(Grants.RegistrarPublicPath)
 //     let registrar = cap.borrow() ?? panic("Could not borrow registrar public")
 //     return self.rentVault.balance
   
 //   `
-  export async function getMyDomainInfos(addr) {
+  export async function getMyGrantInfos(addr) {
     return fcl.query({
-      cadence: GET_MY_DOMAIN_INFOS,
+      cadence: GET_MY_GRANT_INFOS,
       args: (arg, t) => [arg(addr, t.Address)],
     });
   }
   
-  const GET_MY_DOMAIN_INFOS = `
-  import Domains from 0xDomains
+  const GET_MY_GRANT_INFOS = `
+  import Grants from 0xGrants
   import NonFungibleToken from 0xNonFungibleToken
   
-  pub fun main(account: Address): [Domains.DomainInfo] {
-      let capability = getAccount(account).getCapability<&Domains.Collection{NonFungibleToken.CollectionPublic, Domains.CollectionPublic}>(Domains.DomainsPublicPath)
+  pub fun main(account: Address): [Grants.GrantInfo] {
+      let capability = getAccount(account).getCapability<&Grants.Collection{NonFungibleToken.CollectionPublic, Grants.CollectionPublic}>(Grants.GrantsPublicPath)
       let collection = capability.borrow() ?? panic("Collection capability could not be borrowed")
   
       let ids = collection.getIDs()
-      let infos: [Domains.DomainInfo] = []
+      let infos: [Grants.GrantInfo] = []
   
       for id in ids {
-          let domain = collection.borrowDomain(id: id!)
-          let domainInfo = domain.getInfo()
-          infos.append(domainInfo)
+          let grant = collection.borrowGrant(id: id!)
+          let grantInfo = grant.getInfo()
+          infos.append(grantInfo)
       }
   
       return infos
   }
   `;
 
-  export async function getDomainInfoByNameHash(addr, nameHash) {
+  export async function getGrantInfoByNameHash(addr, nameHash) {
   return fcl.query({
-    cadence: GET_DOMAIN_BY_NAMEHASH,
+    cadence: GET_GRANT_BY_NAMEHASH,
     args: (arg, t) => [arg(addr, t.Address), arg(nameHash, t.String)],
   });
 }
 
-const GET_DOMAIN_BY_NAMEHASH = `
-import Domains from 0xDomains
+const GET_GRANT_BY_NAMEHASH = `
+import Grants from 0xGrants
 import NonFungibleToken from 0xNonFungibleToken
 
-pub fun main(account: Address, nameHash: String): Domains.DomainInfo {
-  let capability = getAccount(account).getCapability<&Domains.Collection{NonFungibleToken.CollectionPublic, Domains.CollectionPublic}>(Domains.DomainsPublicPath)
+pub fun main(account: Address, nameHash: String): Grants.GrantInfo {
+  let capability = getAccount(account).getCapability<&Grants.Collection{NonFungibleToken.CollectionPublic, Grants.CollectionPublic}>(Grants.GrantsPublicPath)
   let collection = capability.borrow() ?? panic("Collection capability could not be borrowed")
 
-  let id = Domains.nameHashToIDs[nameHash]
+  let id = Grants.nameHashToIDs[nameHash]
   if id == nil {
-    panic("Domain not found")
+    panic("Grant not found")
   }
 
-  let domain = collection.borrowDomain(id: id!)
-  let domainInfo = domain.getInfo()
-  return domainInfo
+  let grant = collection.borrowGrant(id: id!)
+  let grantInfo = grant.getInfo()
+  return grantInfo
 }
 `;
+
+export async function getFlowBalance(addr) {
+    return fcl.query({
+    cadence :GET_FLOW_BALANCE,
+    args: (arg, t) => [arg(addr, t.Address)],
+   
+  });
+}
+
+  const GET_FLOW_BALANCE=` import FlowToken from 0xFLOW
+  import FungibleToken from 0xFungibleToken
+
+  pub fun main(address: Address): UFix64 {
+    let account = getAccount(address)
+
+    let vaultRef = account.getCapability(/public/flowTokenBalance)
+      .borrow<&FlowToken.Vault{FungibleToken.Balance}>()
+      ?? panic("Could not borrow Balance reference to the Vault")
+
+    return vaultRef.balance
+  }`

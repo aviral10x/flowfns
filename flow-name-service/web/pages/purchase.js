@@ -4,12 +4,12 @@ import Head from "next/head";
 import Navbar from "../components/Navbar";
 import { useAuth } from "../contexts/AuthContext";
 import { checkIsAvailable, getRentCost,getVaultBalance } from "../flow/scripts";
-import { initializeAccount, registerDomain } from "../flow/transactions";
+import { initializeAccount, registerGrant } from "../flow/transactions";
 import styles from "../styles/Purchase.module.css";
 import {
-    renewDomain,
-    updateAddressForDomain,
-    updateBioForDomain,
+    renewGrant,
+    updateAddressForGrant,
+    updateBioForGrant,
   } from "../flow/transactions";
 import { useRouter } from "next/router";
 
@@ -20,10 +20,10 @@ const SECONDS_PER_YEAR = 365 * 24 * 60 * 60;
 export default function Purchase() {
   // Use the AuthContext to check whether the connected user is initialized or not
   const { isInitialized, checkInit } = useAuth();
-  // State Variable to keep track of the domain name the user wants
+  // State Variable to keep track of the grant name the user wants
   const [name, setName] = useState("");
   // State variable to keep track of how many years 
-  // the user wants to rent the domain for
+  // the user wants to rent the grant for
   const [years, setYears] = useState(1);
   // State variable to keep track of the cost of this purchase
   const [cost, setCost] = useState(0.0);
@@ -34,7 +34,7 @@ export default function Purchase() {
 
   const [bio, setBio] = useState("");
 
-  const [domainInfo, setDomainInfo] = useState();
+  const [grantInfo, setGrantInfo] = useState();
 
 
   const router = useRouter();
@@ -55,28 +55,28 @@ export default function Purchase() {
     }
   }
 
-  // Function which calls `registerDomain` 
+  // Function which calls `registerGrant` 
   async function purchase() {
     try {
       setLoading(true);
       const isAvailable = await checkIsAvailable(name);
-      if (!isAvailable) throw new Error("Domain is not available");
+      if (!isAvailable) throw new Error("Grant is not available");
 
       if (years <= 0) throw new Error("You must rent for at least 1 year");
       const duration = (years * SECONDS_PER_YEAR).toFixed(1).toString();
-      const txId = await registerDomain(name, duration);
+      const txId = await registerGrant(name, duration);
       await fcl.tx(txId).onceSealed();
 
  
         // const timer =  setTimeout(async() => {
-        //     const txId1 = await updateBioForDomain(router.query.nameHash, bio);
+        //     const txId1 = await updateBioForGrant(router.query.nameHash, bio);
         //     await fcl.tx(txId1).onceSealed();
-        //     await loadDomainInfo();
+        //     await loadGrantInfo();
         // }, 5000);
         // return () => clearTimeout(timer);
       
 
-     console.log(getVaultBalance())
+    
 
     } catch (error) {
       console.error(error);
@@ -98,14 +98,14 @@ export default function Purchase() {
 //   }
 
 
-  async function loadDomainInfo() {
+  async function loadGrantInfo() {
     try {
-      const info = await getDomainInfoByNameHash(
+      const info = await getGrantInfoByNameHash(
         currentUser.addr,
         router.query.nameHash
       );
       console.log(info);
-      setDomainInfo(info);
+      setGrantInfo(info);
     } catch (error) {
       console.error(error);
     }
@@ -164,11 +164,9 @@ export default function Purchase() {
             //   multiple
             />
             <datalist id="categories" >
-  <option value="Internet Explorer"/>
-  <option value="Firefox"/>
-  <option value="Google Chrome"/>
-  <option value="Opera"/>
-  <option value="Safari"/>
+  <option value="Flow Mobile Experience "/>
+  <option value="Flow Walletless Onboarding "/>
+  <option value="Flow Extending the Ecosystem "/>
 </datalist>
             {/* <span>years</span> */}
           </div>
@@ -194,7 +192,7 @@ export default function Purchase() {
             />
             <span>years</span>
           </div> */}
-          <button onClick={purchase}>Purchase</button>
+          <button onClick={purchase}>Create Grant</button>
           <p>Cost: {cost} FLOW</p>
           <p>{loading ? "Loading..." : null}</p>
         </main>

@@ -4,14 +4,16 @@ import Link from "next/link";
 import {useEffect, useState} from "react";
 import Navbar from "../../components/Navbar";
 import {useAuth} from "../../contexts/AuthContext";
-import {getMyDomainInfos} from "../../flow/scripts";
+import {getMyGrantInfos,getFlowBalance} from "../../flow/scripts";
 import {initializeAccount} from "../../flow/transactions";
 import styles from "../../styles/Manage.module.css";
 
 export default function Home() {
   // Use the AuthContext to track user data
   const { currentUser, isInitialized, checkInit } = useAuth();
-  const [domainInfos, setDomainInfos] = useState([]);
+  const [grantInfos, setGrantInfos] = useState([]);
+  const [bal, setBal] = useState("");
+
 
   // Function to initialize the user's account if not already initialized
   async function initialize() {
@@ -24,21 +26,32 @@ export default function Home() {
     }
   }
 
-  // Function to fetch the domains owned by the currentUser
-  async function fetchMyDomains() {
+  // Function to fetch the grants owned by the currentUser
+  async function fetchMyGrants() {
     try {
-      const domains = await getMyDomainInfos(currentUser.addr);
-      setDomainInfos(domains);
+      const grants = await getMyGrantInfos(currentUser.addr);
+      setGrantInfos(grants);
     } catch (error) {
       console.error(error.message);
     }
   }
 
-  // Load user-owned domains if they are initialized
+  async function fetchBalance() {
+    try {
+      const balance = await getFlowBalance(currentUser.addr);
+setBal(balance);
+    } catch (error) {
+      console.error(error.message);
+    }
+  }
+
+
+  // Load user-owned grants if they are initialized
   // Run if value of `isInitialized` changes
   useEffect(() => {
     if (isInitialized) {
-      fetchMyDomains();
+      fetchMyGrants();
+    
     }
   }, [isInitialized]);
 
@@ -51,9 +64,9 @@ export default function Home() {
       </Head>
 
       <Navbar />
-
+      <button onClick={fetchBalance}>FetchBalance{bal ? bal :"bal"}</button>
       <main className={styles.main}>
-        <h1>Your Registered Domains</h1>
+        <h1>Your Registered Grants</h1>
 
         {!isInitialized ? (
           <>
@@ -61,19 +74,20 @@ export default function Home() {
             <button onClick={initialize}>Initialize Account</button>
           </>
         ) : (
-          <div className={styles.domainsContainer}>
-            {domainInfos.length === 0 ? (
-              <p>You have not registered any FNS Domains yet</p>
+          <div className={styles.grantsContainer}>
+            {grantInfos.length === 0 ? (
+              <p>You have not registered any FNS Grants yet</p>
             ) : (
-              domainInfos.map((di, idx) => (
+              grantInfos.map((di, idx) => (
                 <Link href={`/manage/${di.nameHash}`}>
-                  <div className={styles.domainInfo} key={idx}>
+                  <div className={styles.grantInfo} key={idx}>
                     <p>
                       {di.id} - {di.name}
                     </p>
                     <p>Owner: {di.owner}</p>
                     <p>Linked Address: {di.address ? di.address : "None"}</p>
                     <p>Bio: {di.bio ? di.bio : "None"}</p>
+                  
                     <p>
                       Created At:{" "}
                       {new Date(

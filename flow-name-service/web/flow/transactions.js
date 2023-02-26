@@ -11,21 +11,21 @@ export async function initializeAccount() {
 }
 
 const INIT_ACCOUNT = `
-import Domains from 0xDomains
+import Grants from 0xGrants
 import NonFungibleToken from 0xNonFungibleToken
 
 transaction() {
     prepare(account: AuthAccount) {
-        account.save<@NonFungibleToken.Collection>(<- Domains.createEmptyCollection(), to: Domains.DomainsStoragePath)
-        account.link<&Domains.Collection{NonFungibleToken.CollectionPublic, NonFungibleToken.Receiver, Domains.CollectionPublic}>(Domains.DomainsPublicPath, target: Domains.DomainsStoragePath)
-        account.link<&Domains.Collection>(Domains.DomainsPrivatePath, target: Domains.DomainsStoragePath)
+        account.save<@NonFungibleToken.Collection>(<- Grants.createEmptyCollection(), to: Grants.GrantsStoragePath)
+        account.link<&Grants.Collection{NonFungibleToken.CollectionPublic, NonFungibleToken.Receiver, Grants.CollectionPublic}>(Grants.GrantsPublicPath, target: Grants.GrantsStoragePath)
+        account.link<&Grants.Collection>(Grants.GrantsPrivatePath, target: Grants.GrantsStoragePath)
     }
 }
 `;
 
-export async function registerDomain(name, duration) {
+export async function registerGrant(name, duration) {
     return fcl.mutate({
-      cadence: REGISTER_DOMAIN,
+      cadence: REGISTER_GRANT,
       args: (arg, t) => [arg(name, t.String), arg(duration, t.UFix64)],
       payer: fcl.authz,
       proposer: fcl.authz,
@@ -34,8 +34,8 @@ export async function registerDomain(name, duration) {
     });
   }
   
-  const REGISTER_DOMAIN = `
-  import Domains from 0xDomains
+  const REGISTER_GRANT = `
+  import Grants from 0xGrants
   import FungibleToken from 0xFungibleToken
   import NonFungibleToken from 0xNonFungibleToken
   
@@ -43,13 +43,13 @@ export async function registerDomain(name, duration) {
       let nftReceiverCap: Capability<&{NonFungibleToken.Receiver}>
       let vault: @FungibleToken.Vault
       prepare(account: AuthAccount) {
-          self.nftReceiverCap = account.getCapability<&{NonFungibleToken.Receiver}>(Domains.DomainsPublicPath)
+          self.nftReceiverCap = account.getCapability<&{NonFungibleToken.Receiver}>(Grants.GrantsPublicPath)
           let vaultRef = account.borrow<&FungibleToken.Vault>(from: /storage/flowTokenVault) ?? panic("Could not borrow Flow token vault reference")
-          let rentCost = Domains.getRentCost(name: name, duration: duration)
+          let rentCost = Grants.getRentCost(name: name, duration: duration)
           self.vault <- vaultRef.withdraw(amount: rentCost)
       }
       execute {
-          Domains.registerDomain(name: name, duration: duration, feeTokens: <- self.vault, receiver: self.nftReceiverCap)
+          Grants.registerGrant(name: name, duration: duration, feeTokens: <- self.vault, receiver: self.nftReceiverCap)
       }
   }
   `;
@@ -57,7 +57,7 @@ export async function registerDomain(name, duration) {
 
   export async function fundGrant(name, duration) {
     return fcl.mutate({
-      cadence: REGISTER_DOMAIN,
+      cadence: REGISTER_GRANT,
       args: (arg, t) => [arg(name, t.String), arg(duration, t.UFix64)],
       payer: fcl.authz,
       proposer: fcl.authz,
@@ -67,7 +67,7 @@ export async function registerDomain(name, duration) {
   }
   
   const FUND_GRANT = `
-  import Domains from 0xDomains
+  import Grants from 0xGrants
   import FungibleToken from 0xFungibleToken
   import NonFungibleToken from 0xNonFungibleToken
   
@@ -75,13 +75,13 @@ export async function registerDomain(name, duration) {
       let nftReceiverCap: Capability<&{NonFungibleToken.Receiver}>
       let vault: @FungibleToken.Vault
       prepare(account: AuthAccount) {
-          self.nftReceiverCap = account.getCapability<&{NonFungibleToken.Receiver}>(Domains.DomainsPublicPath)
+          self.nftReceiverCap = account.getCapability<&{NonFungibleToken.Receiver}>(Grants.GrantsPublicPath)
           let vaultRef = account.borrow<&FungibleToken.Vault>(from: /storage/flowTokenVault) ?? panic("Could not borrow Flow token vault reference")
-          let rentCost = Domains.getRentCost(name: name, duration: duration)
+          let rentCost = Grants.getRentCost(name: name, duration: duration)
           self.vault <- vaultRef.withdraw(amount: rentCost)
       }
       execute {
-          Domains.registerDomain(name: name, duration: duration, feeTokens: <- self.vault, receiver: self.nftReceiverCap)
+          Grants.registerGrant(name: name, duration: duration, feeTokens: <- self.vault, receiver: self.nftReceiverCap)
       }
   }
   `;
@@ -130,9 +130,9 @@ export async function registerDomain(name, duration) {
 
 
 
-  export async function updateBioForDomain(nameHash, bio) {
+  export async function updateBioForGrant(nameHash, bio) {
     return fcl.mutate({
-      cadence: UPDATE_BIO_FOR_DOMAIN,
+      cadence: UPDATE_BIO_FOR_GRANT,
       args: (arg, t) => [arg(nameHash, t.String), arg(bio, t.String)],
       payer: fcl.authz,
       proposer: fcl.authz,
@@ -141,32 +141,68 @@ export async function registerDomain(name, duration) {
     });
   }
   
-  const UPDATE_BIO_FOR_DOMAIN = `
-  import Domains from 0xDomains
+  const UPDATE_BIO_FOR_GRANT = `
+  import Grants from 0xGrants
   
   transaction(nameHash: String, bio: String) {
-      var domain: &{Domains.DomainPrivate}
+      var grant: &{Grants.GrantPrivate}
       prepare(account: AuthAccount) {
-          var domain: &{Domains.DomainPrivate}? = nil
-          let collectionPvt = account.borrow<&{Domains.CollectionPrivate}>(from: Domains.DomainsStoragePath) ?? panic("Could not load collection private")
+          var grant: &{Grants.GrantPrivate}? = nil
+          let collectionPvt = account.borrow<&{Grants.CollectionPrivate}>(from: Grants.GrantsStoragePath) ?? panic("Could not load collection private")
   
-          let id = Domains.nameHashToIDs[nameHash]
+          let id = Grants.nameHashToIDs[nameHash]
           if id == nil {
-              panic("Could not find domain")
+              panic("Could not find grant")
           }
   
-          domain = collectionPvt.borrowDomainPrivate(id: id!)
-          self.domain = domain!
+          grant = collectionPvt.borrowGrantPrivate(id: id!)
+          self.grant = grant!
       }
       execute {
-          self.domain.setBio(bio: bio)
+          self.grant.setBio(bio: bio)
       }
   }
   `;
 
-  export async function updateAddressForDomain(nameHash, addr) {
+  export async function updateImgUrlForGrant(nameHash, imgurl) {
     return fcl.mutate({
-      cadence: UPDATE_ADDRESS_FOR_DOMAIN,
+      cadence: UPDATE_IMGURL_FOR_GRANT,
+      args: (arg, t) => [arg(nameHash, t.String), arg(imgurl, t.String)],
+      payer: fcl.authz,
+      proposer: fcl.authz,
+      authorizations: [fcl.authz],
+      limit: 1000,
+    });
+  }
+  
+  const UPDATE_IMGURL_FOR_GRANT = `
+  import Grants from 0xGrants
+  
+  transaction(nameHash: String, imgurl: String) {
+      var grant: &{Grants.GrantPrivate}
+      prepare(account: AuthAccount) {
+          var grant: &{Grants.GrantPrivate}? = nil
+          let collectionPvt = account.borrow<&{Grants.CollectionPrivate}>(from: Grants.GrantsStoragePath) ?? panic("Could not load collection private")
+  
+          let id = Grants.nameHashToIDs[nameHash]
+          if id == nil {
+              panic("Could not find grant")
+          }
+  
+          grant = collectionPvt.borrowGrantPrivate(id: id!)
+          self.grant = grant!
+      }
+      execute {
+          self.grant.setImgUrl(imgurl: imgurl)
+      }
+  }
+  `;
+
+
+
+  export async function updateAddressForGrant(nameHash, addr) {
+    return fcl.mutate({
+      cadence: UPDATE_ADDRESS_FOR_GRANT,
       args: (arg, t) => [arg(nameHash, t.String), arg(addr, t.Address)],
       payer: fcl.authz,
       proposer: fcl.authz,
@@ -175,32 +211,32 @@ export async function registerDomain(name, duration) {
     });
   }
   
-  const UPDATE_ADDRESS_FOR_DOMAIN = `
-  import Domains from 0xDomains
+  const UPDATE_ADDRESS_FOR_GRANT = `
+  import Grants from 0xGrants
   
   transaction(nameHash: String, addr: Address) {
-      var domain: &{Domains.DomainPrivate}
+      var grant: &{Grants.GrantPrivate}
       prepare(account: AuthAccount) {
-          var domain: &{Domains.DomainPrivate}? = nil
-          let collectionPvt = account.borrow<&{Domains.CollectionPrivate}>(from: Domains.DomainsStoragePath) ?? panic("Could not load collection private")
+          var grant: &{Grants.GrantPrivate}? = nil
+          let collectionPvt = account.borrow<&{Grants.CollectionPrivate}>(from: Grants.GrantsStoragePath) ?? panic("Could not load collection private")
   
-          let id = Domains.nameHashToIDs[nameHash]
+          let id = Grants.nameHashToIDs[nameHash]
           if id == nil {
-              panic("Could not find domain")
+              panic("Could not find grant")
           }
   
-          domain = collectionPvt.borrowDomainPrivate(id: id!)
-          self.domain = domain!
+          grant = collectionPvt.borrowGrantPrivate(id: id!)
+          self.grant = grant!
       }
       execute {
-          self.domain.setAddress(addr: addr)
+          self.grant.setAddress(addr: addr)
       }
   }
   `;
 
-  export async function renewDomain(name, duration) {
+  export async function renewGrant(name, duration) {
     return fcl.mutate({
-      cadence: RENEW_DOMAIN,
+      cadence: RENEW_GRANT,
       args: (arg, t) => [arg(name, t.String), arg(duration, t.UFix64)],
       payer: fcl.authz,
       proposer: fcl.authz,
@@ -209,34 +245,108 @@ export async function registerDomain(name, duration) {
     });
   }
   
-  const RENEW_DOMAIN = `
-  import Domains from 0xDomains
+  const RENEW_GRANT = `
+  import Grants from 0xGrants
   import FungibleToken from 0xFungibleToken
   import NonFungibleToken from 0xNonFungibleToken
   
   transaction(name: String, duration: UFix64) {
     let vault: @FungibleToken.Vault
-    var domain: &Domains.NFT
+    var grant: &Grants.NFT
     prepare(account: AuthAccount) {
-        let collectionRef = account.borrow<&{Domains.CollectionPublic}>(from: Domains.DomainsStoragePath) ?? panic("Could not borrow collection public")
-        var domain: &Domains.NFT? = nil
-        let collectionPrivateRef = account.borrow<&{Domains.CollectionPrivate}>(from: Domains.DomainsStoragePath) ?? panic("Could not borrow collection private")
+        let collectionRef = account.borrow<&{Grants.CollectionPublic}>(from: Grants.GrantsStoragePath) ?? panic("Could not borrow collection public")
+        var grant: &Grants.NFT? = nil
+        let collectionPrivateRef = account.borrow<&{Grants.CollectionPrivate}>(from: Grants.GrantsStoragePath) ?? panic("Could not borrow collection private")
   
-        let nameHash = Domains.getDomainNameHash(name: name)
-        let domainId = Domains.nameHashToIDs[nameHash]
-        log(domainId)
-        if domainId == nil {
-            panic("You don't own this domain")
+        let nameHash = Grants.getGrantNameHash(name: name)
+        let grantId = Grants.nameHashToIDs[nameHash]
+        log(grantId)
+        if grantId == nil {
+            panic("You don't own this grant")
         }
   
-        domain = collectionPrivateRef.borrowDomainPrivate(id: domainId!)
-        self.domain = domain!
+        grant = collectionPrivateRef.borrowGrantPrivate(id: grantId!)
+        self.grant = grant!
         let vaultRef = account.borrow<&FungibleToken.Vault>(from: /storage/flowTokenVault) ?? panic("Could not borrow Flow token vault reference")
-        let rentCost = Domains.getRentCost(name: name, duration: duration)
+        let rentCost = Grants.getRentCost(name: name, duration: duration)
         self.vault <- vaultRef.withdraw(amount: rentCost)
     }
     execute {
-        Domains.renewDomain(domain: self.domain, duration: duration, feeTokens: <- self.vault)
+        Grants.renewGrant(grant: self.grant, duration: duration, feeTokens: <- self.vault)
     }
   }
   `;
+
+  export async function transferTokens(amount, recipient) {
+
+    const transactionId = await fcl.mutate({
+      cadence: TRANSFER_TOKENS,
+      args: (arg, t) => [
+        arg(parseFloat(amount).toFixed(2), t.UInt64),
+        arg(recipient, t.Address)
+      ],
+      proposer: fcl.authz,
+      payer: fcl.authz,
+      authorizations: [fcl.authz],
+      limit: 999
+    });
+
+    console.log('Transaction Id', transactionId);
+  }
+
+  const TRANSFER_TOKENS =`
+  import FungibleToken from 0xFungibleToken
+  import Grant from 0xGrants
+
+  transaction(amount: UInt64, recipient: Address) {
+    let SentVault: @FungibleToken.Vault
+    prepare(signer: AuthAccount) {
+        let vaultRef = signer.borrow<&FungibleToken.Vault>(from: FungibleToken.VaultStoragePath)
+                          ?? panic("Could not borrow reference to the owner's Vault!")
+
+        self.SentVault <- vaultRef.withdraw(amount: amount)
+    }
+
+    execute {
+        let receiverRef = getAccount(recipient).getCapability(FungibleToken.VaultReceiverPath)
+                            .borrow<&FungibleToken.Vault{FungibleToken.Receiver}>()
+                            ?? panic("Could not borrow receiver reference to the recipient's Vault")
+
+        receiverRef.deposit(from: <-self.SentVault)
+    }
+  }
+  `;
+
+
+  export async function sendFlow(recepient, amount) {
+    return fcl.mutate({
+    cadence:SEND_FLOW,
+    args : (arg, t) => [arg(recepient, t.Address), arg(amount, t.UInt64)],
+    payer: fcl.authz,
+    proposer: fcl.authz,
+    authorizations: [fcl.authz],
+    limit: 1000,
+});
+}
+
+const SEND_FLOW=`      
+import FungibleToken from 0xFungibleToken
+import FlowToken from 0xFLOW
+
+transaction(recepient: Address, amount: UInt64){
+  prepare(signer: AuthAccount){
+    let sender = signer.borrow<&FlowToken.Vault>(from: /storage/flowTokenVault)
+      ?? panic("Could not borrow Provider reference to the Vault")
+
+    let receiverAccount = getAccount(recepient)
+
+    let receiver = receiverAccount.getCapability(/public/flowTokenReceiver)
+      .borrow<&FlowToken.Vault{FungibleToken.Receiver}>()
+      ?? panic("Could not borrow Receiver reference to the Vault")
+
+            let tempVault <- sender.withdraw(amount: amount)
+    receiver.deposit(from: <- tempVault)
+  }
+}
+`;
+ 

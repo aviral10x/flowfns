@@ -2,60 +2,61 @@ import FungibleToken from "./interfaces/FungibleToken.cdc"
 import NonFungibleToken from "./interfaces/NonFungibleToken.cdc"
 import FlowToken from "./tokens/FlowToken.cdc"
 
-pub contract Domains: NonFungibleToken {
+pub contract Grants: NonFungibleToken {
   pub let forbiddenChars: String
   pub let owners: {String: Address}
   pub let expirationTimes: {String: UFix64}
   pub let nameHashToIDs: {String: UInt64}
   pub var totalSupply: UInt64
 
-  pub let DomainsStoragePath: StoragePath
-  pub let DomainsPrivatePath: PrivatePath
-  pub let DomainsPublicPath: PublicPath
+  pub let GrantsStoragePath: StoragePath
+  pub let GrantsPrivatePath: PrivatePath
+  pub let GrantsPublicPath: PublicPath
   pub let RegistrarStoragePath: StoragePath
   pub let RegistrarPrivatePath: PrivatePath
   pub let RegistrarPublicPath: PublicPath
 
   pub event ContractInitialized()
-  pub event DomainBioChanged(nameHash: String, bio: String)
-  pub event DomainAddressChanged(nameHash: String, address: Address)
+  pub event GrantBioChanged(nameHash: String, bio: String)
+  pub event GrantImgUrlChanged(nameHash: String, imgurl: String)
+  pub event GrantAddressChanged(nameHash: String, address: Address)
   pub event Withdraw(id: UInt64, from: Address?)
   pub event Deposit(id: UInt64, to: Address?)
-  pub event DomainMinted(id: UInt64, name: String, nameHash: String, expiresAt: UFix64, receiver: Address)
-  pub event DomainRenewed(id: UInt64, name: String, nameHash: String, expiresAt: UFix64, receiver: Address)
+  pub event GrantMinted(id: UInt64, name: String, nameHash: String, expiresAt: UFix64, receiver: Address)
+  pub event GrantRenewed(id: UInt64, name: String, nameHash: String, expiresAt: UFix64, receiver: Address)
 
   init() {
     self.owners = {}
     self.expirationTimes = {}
     self.nameHashToIDs = {}
 
-    self.forbiddenChars = "!@#$%^&*()<>? ./"
+    self.forbiddenChars = "!@#$%^&*()<>?/"
     self.totalSupply = 0
 
-    self.DomainsStoragePath = StoragePath(identifier: "flowNameServiceDomains") ?? panic("Could not set storage path")
-    self.DomainsPrivatePath = PrivatePath(identifier: "flowNameServiceDomains") ?? panic("Could not set private path")
-    self.DomainsPublicPath = PublicPath(identifier: "flowNameServiceDomains") ?? panic("Could not set public path")
+    self.GrantsStoragePath = StoragePath(identifier: "flowGrants") ?? panic("Could not set storage path")
+    self.GrantsPrivatePath = PrivatePath(identifier: "flowGrants") ?? panic("Could not set private path")
+    self.GrantsPublicPath = PublicPath(identifier: "flowGrants") ?? panic("Could not set public path")
 
-    self.RegistrarStoragePath = StoragePath(identifier: "flowNameServiceRegistrar") ?? panic("Could not set storage path")
-    self.RegistrarPrivatePath = PrivatePath(identifier: "flowNameServiceRegistrar") ?? panic("Could not set private path")
-    self.RegistrarPublicPath = PublicPath(identifier: "flowNameServiceRegistrar") ?? panic("Could not set public path")
+    self.RegistrarStoragePath = StoragePath(identifier: "Registrar") ?? panic("Could not set storage path")
+    self.RegistrarPrivatePath = PrivatePath(identifier: "flowRegistrar") ?? panic("Could not set private path")
+    self.RegistrarPublicPath = PublicPath(identifier: "flowRegistrar") ?? panic("Could not set public path")
 
 
-    self.account.save(<- self.createEmptyCollection(), to: Domains.DomainsStoragePath)
-    self.account.link<&Domains.Collection{NonFungibleToken.CollectionPublic, NonFungibleToken.Receiver, Domains.CollectionPublic}>(self.DomainsPublicPath, target: self.DomainsStoragePath)
-    self.account.link<&Domains.Collection>(self.DomainsPrivatePath, target: self.DomainsStoragePath)
+    self.account.save(<- self.createEmptyCollection(), to: Grants.GrantsStoragePath)
+    self.account.link<&Grants.Collection{NonFungibleToken.CollectionPublic, NonFungibleToken.Receiver, Grants.CollectionPublic}>(self.GrantsPublicPath, target: self.GrantsStoragePath)
+    self.account.link<&Grants.Collection>(self.GrantsPrivatePath, target: self.GrantsStoragePath)
 
-    let collectionCapability = self.account.getCapability<&Domains.Collection>(self.DomainsPrivatePath)
+    let collectionCapability = self.account.getCapability<&Grants.Collection>(self.GrantsPrivatePath)
     let vault <- FlowToken.createEmptyVault()
     let registrar <- create Registrar(vault: <- vault, collection: collectionCapability)
     self.account.save(<- registrar, to: self.RegistrarStoragePath)
-    self.account.link<&Domains.Registrar{Domains.RegistrarPublic}>(self.RegistrarPublicPath, target: self.RegistrarStoragePath)
-    self.account.link<&Domains.Registrar>(self.RegistrarPrivatePath, target: self.RegistrarStoragePath)
+    self.account.link<&Grants.Registrar{Grants.RegistrarPublic}>(self.RegistrarPublicPath, target: self.RegistrarStoragePath)
+    self.account.link<&Grants.Registrar>(self.RegistrarPrivatePath, target: self.RegistrarStoragePath)
 
     emit ContractInitialized()
   }
 
-  pub struct DomainInfo {
+  pub struct GrantInfo {
     pub let id: UInt64
     pub let owner: Address
     pub let name: String
@@ -64,6 +65,7 @@ pub contract Domains: NonFungibleToken {
     pub let address: Address?
     pub let bio: String
     pub let createdAt: UFix64
+    pub let imgurl: String
 
     init(
       id: UInt64,
@@ -73,7 +75,8 @@ pub contract Domains: NonFungibleToken {
       expiresAt: UFix64,
       address: Address?,
       bio: String,
-      createdAt: UFix64
+      createdAt: UFix64,
+      imgurl: String
     ) {
       self.id = id
       self.owner = owner
@@ -83,10 +86,11 @@ pub contract Domains: NonFungibleToken {
       self.address = address
       self.bio = bio
       self.createdAt = createdAt
+      self.imgurl = imgurl
     }
   }
 
-  pub resource interface DomainPublic {
+  pub resource interface GrantPublic {
     pub let id: UInt64
     pub let name: String
     pub let nameHash: String
@@ -94,16 +98,19 @@ pub contract Domains: NonFungibleToken {
 
     pub fun getBio(): String
     pub fun getAddress(): Address?
-    pub fun getDomainName(): String
-    pub fun getInfo(): DomainInfo
+    pub fun getGrantName(): String
+    pub fun getInfo(): GrantInfo
+    pub fun getImgUrl() : String
   }
 
-  pub resource interface DomainPrivate {
+  pub resource interface GrantPrivate {
     pub fun setBio(bio: String)
     pub fun setAddress(addr: Address)
+    pub fun setImgUrl(imgurl: String)
+
   }
   
-  pub resource NFT: DomainPublic, DomainPrivate, NonFungibleToken.INFT {
+  pub resource NFT: GrantPublic, GrantPrivate, NonFungibleToken.INFT {
     pub let id: UInt64
     pub let name: String
     pub let nameHash: String
@@ -111,6 +118,9 @@ pub contract Domains: NonFungibleToken {
 
     access(self) var address: Address?
     access(self) var bio: String
+    access(self) var imgurl: String
+
+
 
     init(id: UInt64, name: String, nameHash: String) {
       self.id = id
@@ -119,6 +129,7 @@ pub contract Domains: NonFungibleToken {
       self.createdAt = getCurrentBlock().timestamp
       self.address = nil
       self.bio = ""
+      self.imgurl = ""
     }
 
     pub fun getBio(): String {
@@ -127,11 +138,24 @@ pub contract Domains: NonFungibleToken {
 
     pub fun setBio(bio: String) {
       pre {
-        Domains.isExpired(nameHash: self.nameHash) == false : "Domain is expired"
+        Grants.isExpired(nameHash: self.nameHash) == false : "Grant is expired"
       }
       self.bio = bio
-      emit DomainBioChanged(nameHash: self.nameHash, bio: bio)
+      emit GrantBioChanged(nameHash: self.nameHash, bio: bio)
     }
+
+      pub fun getImgUrl(): String {
+      return self.imgurl
+    }
+
+    pub fun setImgUrl(imgurl: String) {
+      pre {
+        Grants.isExpired(nameHash: self.nameHash) == false : "Grant is expired"
+      }
+      self.imgurl = imgurl
+      emit GrantImgUrlChanged(nameHash: self.nameHash, imgurl: imgurl)
+    }
+
 
     pub fun getAddress(): Address? {
       return self.address
@@ -139,40 +163,41 @@ pub contract Domains: NonFungibleToken {
 
     pub fun setAddress(addr: Address) {
       pre {
-        Domains.isExpired(nameHash: self.nameHash) == false : "Domain is expired"
+        Grants.isExpired(nameHash: self.nameHash) == false : "Grant is expired"
       }
 
       self.address = addr
-      emit DomainAddressChanged(nameHash: self.nameHash, address: addr)
+      emit GrantAddressChanged(nameHash: self.nameHash, address: addr)
     }
 
-    pub fun getDomainName(): String {
-      return self.name.concat(".fns")
+    pub fun getGrantName(): String {
+      return self.name
     }
 
-    pub fun getInfo(): DomainInfo {
-      let owner = Domains.owners[self.nameHash]!
+    pub fun getInfo(): GrantInfo {
+      let owner = Grants.owners[self.nameHash]!
 
-      return DomainInfo(
+      return GrantInfo(
         id: self.id,
         owner: owner,
-        name: self.getDomainName(),
+        name: self.name,
         nameHash: self.nameHash,
-        expiresAt: Domains.expirationTimes[self.nameHash]!,
+        expiresAt: Grants.expirationTimes[self.nameHash]!,
         address: self.address,
         bio: self.bio,
-        createdAt: self.createdAt
+        createdAt: self.createdAt,
+        imgurl: self.imgurl
       )
     }
   }
 
   pub resource interface CollectionPublic {
-    pub fun borrowDomain(id: UInt64): &{Domains.DomainPublic}
+    pub fun borrowGrant(id: UInt64): &{Grants.GrantPublic}
   }
 
   pub resource interface CollectionPrivate {
-    access(account) fun mintDomain(name: String, nameHash: String, expiresAt: UFix64, receiver: Capability<&{NonFungibleToken.Receiver}>)
-    pub fun borrowDomainPrivate(id: UInt64): &Domains.NFT
+    access(account) fun mintGrant(name: String, nameHash: String, expiresAt: UFix64, receiver: Capability<&{NonFungibleToken.Receiver}>)
+    pub fun borrowGrantPrivate(id: UInt64): &Grants.NFT
   }
 
   pub resource Collection: CollectionPublic, CollectionPrivate, NonFungibleToken.Provider, NonFungibleToken.Receiver, NonFungibleToken.CollectionPublic {
@@ -184,24 +209,24 @@ pub contract Domains: NonFungibleToken {
 
     // NonFungibleToken.Provider
     pub fun withdraw(withdrawID: UInt64): @NonFungibleToken.NFT {
-      let domain <- self.ownedNFTs.remove(key: withdrawID) ?? panic("NFT not found in collection")
-      emit Withdraw(id: domain.id, from: self.owner?.address)
-      return <-domain
+      let grant <- self.ownedNFTs.remove(key: withdrawID) ?? panic("NFT not found in collection")
+      emit Withdraw(id: grant.id, from: self.owner?.address)
+      return <-grant
     }
 
     // NonFungibleToken.Receiver
     pub fun deposit(token: @NonFungibleToken.NFT) {
-      let domain <- token as! @Domains.NFT
-      let id = domain.id
-      let nameHash = domain.nameHash
+      let grant <- token as! @Grants.NFT
+      let id = grant.id
+      let nameHash = grant.nameHash
 
-      if Domains.isExpired(nameHash: nameHash) {
-        panic("Domain is expired")
+      if Grants.isExpired(nameHash: nameHash) {
+        panic("Grant is expired")
       }
 
-      Domains.updateOwner(nameHash: nameHash, address: self.owner!.address)
+      Grants.updateOwner(nameHash: nameHash, address: self.owner!.address)
 
-      let oldToken <- self.ownedNFTs[id] <- domain
+      let oldToken <- self.ownedNFTs[id] <- grant
       emit Deposit(id: id, to: self.owner?.address)
 
       destroy oldToken
@@ -216,44 +241,44 @@ pub contract Domains: NonFungibleToken {
       return (&self.ownedNFTs[id] as &NonFungibleToken.NFT?)!
     }
 
-    // Domains.CollectionPublic
-    pub fun borrowDomain(id: UInt64): &{Domains.DomainPublic} {
+    // Grants.CollectionPublic
+    pub fun borrowGrant(id: UInt64): &{Grants.GrantPublic} {
       pre {
-        self.ownedNFTs[id] != nil : "Domain does not exist"
+        self.ownedNFTs[id] != nil : "Grant does not exist"
       }
 
       let token = (&self.ownedNFTs[id] as auth &NonFungibleToken.NFT?)!
-      return token as! &Domains.NFT
+      return token as! &Grants.NFT
     }
 
-    // Domains.CollectionPrivate
-    access(account) fun mintDomain(name: String, nameHash: String, expiresAt: UFix64, receiver: Capability<&{NonFungibleToken.Receiver}>){
+    // Grants.CollectionPrivate
+    access(account) fun mintGrant(name: String, nameHash: String, expiresAt: UFix64, receiver: Capability<&{NonFungibleToken.Receiver}>){
       pre {
-        Domains.isAvailable(nameHash: nameHash) : "Domain not available"
+        Grants.isAvailable(nameHash: nameHash) : "Grant not available"
       }
 
-      let domain <- create Domains.NFT(
-        id: Domains.totalSupply,
+      let grant <- create Grants.NFT(
+        id: Grants.totalSupply,
         name: name,
         nameHash: nameHash
       )
 
-      Domains.updateOwner(nameHash: nameHash, address: receiver.address)
-      Domains.updateExpirationTime(nameHash: nameHash, expTime: expiresAt)
-      Domains.updateNameHashToID(nameHash: nameHash, id: domain.id)
-      Domains.totalSupply = Domains.totalSupply + 1
+      Grants.updateOwner(nameHash: nameHash, address: receiver.address)
+      Grants.updateExpirationTime(nameHash: nameHash, expTime: expiresAt)
+      Grants.updateNameHashToID(nameHash: nameHash, id: grant.id)
+      Grants.totalSupply = Grants.totalSupply + 1
 
-      emit DomainMinted(id: domain.id, name: name, nameHash: nameHash, expiresAt: expiresAt, receiver: receiver.address)
+      emit GrantMinted(id: grant.id, name: name, nameHash: nameHash, expiresAt: expiresAt, receiver: receiver.address)
 
-      receiver.borrow()!.deposit(token: <- domain)
+      receiver.borrow()!.deposit(token: <- grant)
     }
 
-    pub fun borrowDomainPrivate(id: UInt64): &Domains.NFT {
+    pub fun borrowGrantPrivate(id: UInt64): &Grants.NFT {
       pre {
-        self.ownedNFTs[id] != nil: "domain doesn't exist"
+        self.ownedNFTs[id] != nil: "grant doesn't exist"
       }
       let ref = (&self.ownedNFTs[id] as auth &NonFungibleToken.NFT?)!
-      return ref as! &Domains.NFT
+      return ref as! &Grants.NFT
     }
 
     destroy() {
@@ -263,11 +288,11 @@ pub contract Domains: NonFungibleToken {
 
   pub resource interface RegistrarPublic {
     pub let minRentDuration: UFix64
-    pub let maxDomainLength: Int
+    pub let maxGrantLength: Int
     pub let prices: {Int: UFix64}
 
-    pub fun renewDomain(domain: &Domains.NFT, duration: UFix64, feeTokens: @FungibleToken.Vault)
-    pub fun registerDomain(name: String, duration: UFix64, feeTokens: @FungibleToken.Vault, receiver: Capability<&{NonFungibleToken.Receiver}>)
+    pub fun renewGrant(grant: &Grants.NFT, duration: UFix64, feeTokens: @FungibleToken.Vault)
+    pub fun registerGrant(name: String, duration: UFix64, feeTokens: @FungibleToken.Vault, receiver: Capability<&{NonFungibleToken.Receiver}>)
     pub fun getPrices(): {Int: UFix64}
     pub fun getVaultBalance(): UFix64
   }
@@ -280,23 +305,23 @@ pub contract Domains: NonFungibleToken {
 
   pub resource Registrar: RegistrarPublic, RegistrarPrivate {
     pub let minRentDuration: UFix64
-    pub let maxDomainLength: Int
+    pub let maxGrantLength: Int
     pub let prices: {Int: UFix64}
 
     priv var rentVault: @FungibleToken.Vault
-    access(account) var domainsCollection: Capability<&Domains.Collection>
+    access(account) var grantsCollection: Capability<&Grants.Collection>
 
-    init(vault: @FungibleToken.Vault, collection: Capability<&Domains.Collection>) {
+    init(vault: @FungibleToken.Vault, collection: Capability<&Grants.Collection>) {
       self.minRentDuration = UFix64(365 * 24 * 60 * 60)
-      self.maxDomainLength = 30
+      self.maxGrantLength = 30
       self.prices = {}
 
       self.rentVault <- vault
-      self.domainsCollection = collection
+      self.grantsCollection = collection
     }
 
-    pub fun renewDomain(domain: &Domains.NFT, duration: UFix64, feeTokens: @FungibleToken.Vault) {
-      var len = domain.name.length
+    pub fun renewGrant(grant: &Grants.NFT, duration: UFix64, feeTokens: @FungibleToken.Vault) {
+      var len = grant.name.length
       if len > 10 {
         len = 10
       }
@@ -304,11 +329,11 @@ pub contract Domains: NonFungibleToken {
       let price = self.getPrices()[len]
 
       if duration < self.minRentDuration {
-        panic("Domain must be registered for at least the minimum duration: ".concat(self.minRentDuration.toString()))
+        panic("Grant must be registered for at least the minimum duration: ".concat(self.minRentDuration.toString()))
       }
 
       if price == 0.0 || price == nil {
-        panic("Price has not been set for this length of domain")
+        panic("Price has not been set for this length of grant")
       }
 
       let rentCost = price! * duration
@@ -320,21 +345,21 @@ pub contract Domains: NonFungibleToken {
 
       self.rentVault.deposit(from: <- feeTokens)
 
-      let newExpTime = Domains.getExpirationTime(nameHash: domain.nameHash)! + duration
-      Domains.updateExpirationTime(nameHash: domain.nameHash, expTime: newExpTime)
+      let newExpTime = Grants.getExpirationTime(nameHash: grant.nameHash)! + duration
+      Grants.updateExpirationTime(nameHash: grant.nameHash, expTime: newExpTime)
 
-      emit DomainRenewed(id: domain.id, name: domain.name, nameHash: domain.nameHash, expiresAt: newExpTime, receiver: domain.owner!.address)
+      emit GrantRenewed(id: grant.id, name: grant.name, nameHash: grant.nameHash, expiresAt: newExpTime, receiver: grant.owner!.address)
     }
 
-    pub fun registerDomain(name: String, duration: UFix64, feeTokens: @FungibleToken.Vault, receiver: Capability<&{NonFungibleToken.Receiver}>) {
+    pub fun registerGrant(name: String, duration: UFix64, feeTokens: @FungibleToken.Vault, receiver: Capability<&{NonFungibleToken.Receiver}>) {
       pre {
-        name.length <= self.maxDomainLength : "Domain name is too long"
+        name.length <= self.maxGrantLength : "Grant name is too long"
       }
 
-      let nameHash = Domains.getDomainNameHash(name: name)
+      let nameHash = Grants.getGrantNameHash(name: name)
       
-      if Domains.isAvailable(nameHash: nameHash) == false {
-        panic("Domain is not available")
+      if Grants.isAvailable(nameHash: nameHash) == false {
+        panic("Grant is not available")
       }
 
       var len = name.length
@@ -345,11 +370,11 @@ pub contract Domains: NonFungibleToken {
       let price = self.getPrices()[len]
 
       if duration < self.minRentDuration {
-        panic("Domain must be registered for at least the minimum duration: ".concat(self.minRentDuration.toString()))
+        panic("Grant must be registered for at least the minimum duration: ".concat(self.minRentDuration.toString()))
       }
 
       if price == 0.0 || price == nil {
-        panic("Price has not been set for this length of domain")
+        panic("Price has not been set for this length of grant")
       }
 
       let rentCost = price! * duration
@@ -363,9 +388,9 @@ pub contract Domains: NonFungibleToken {
 
       let expirationTime = getCurrentBlock().timestamp + duration
 
-      self.domainsCollection.borrow()!.mintDomain(name: name, nameHash: nameHash, expiresAt: expirationTime, receiver: receiver)
+      self.grantsCollection.borrow()!.mintGrant(name: name, nameHash: nameHash, expiresAt: expirationTime, receiver: receiver)
 
-      // Event is emitted from mintDomain ^
+      // Event is emitted from mintGrant ^
     }
 
     pub fun getPrices(): {Int: UFix64} {
@@ -405,16 +430,16 @@ pub contract Domains: NonFungibleToken {
     return <- collection
   }
 
-  pub fun registerDomain(name: String, duration: UFix64, feeTokens: @FungibleToken.Vault, receiver: Capability<&{NonFungibleToken.Receiver}>) {
-    let cap = self.account.getCapability<&Domains.Registrar{Domains.RegistrarPublic}>(self.RegistrarPublicPath)
+  pub fun registerGrant(name: String, duration: UFix64, feeTokens: @FungibleToken.Vault, receiver: Capability<&{NonFungibleToken.Receiver}>) {
+    let cap = self.account.getCapability<&Grants.Registrar{Grants.RegistrarPublic}>(self.RegistrarPublicPath)
     let registrar = cap.borrow() ?? panic("Could not borrow registrar")
-    registrar.registerDomain(name: name, duration: duration, feeTokens: <- feeTokens, receiver: receiver)
+    registrar.registerGrant(name: name, duration: duration, feeTokens: <- feeTokens, receiver: receiver)
   }
 
-  pub fun renewDomain(domain: &Domains.NFT, duration: UFix64, feeTokens: @FungibleToken.Vault) {
-    let cap = self.account.getCapability<&Domains.Registrar{Domains.RegistrarPublic}>(self.RegistrarPublicPath)
+  pub fun renewGrant(grant: &Grants.NFT, duration: UFix64, feeTokens: @FungibleToken.Vault) {
+    let cap = self.account.getCapability<&Grants.Registrar{Grants.RegistrarPublic}>(self.RegistrarPublicPath)
     let registrar = cap.borrow() ?? panic("Could not borrow registrar")
-    registrar.renewDomain(domain: domain, duration: duration, feeTokens: <- feeTokens)
+    registrar.renewGrant(grant: grant, duration: duration, feeTokens: <- feeTokens)
   }
 
   pub fun getRentCost(name: String, duration: UFix64): UFix64 {
@@ -429,13 +454,13 @@ pub contract Domains: NonFungibleToken {
     return rentCost
   }
 
-  pub fun getDomainNameHash(name: String): String {
+  pub fun getGrantNameHash(name: String): String {
     let forbiddenCharsUTF8 = self.forbiddenChars.utf8
     let nameUTF8 = name.utf8
 
     for char in forbiddenCharsUTF8 {
       if nameUTF8.contains(char) {
-        panic("Illegal domain name")
+        panic("Illegal grant name")
       }
     }
 
@@ -451,13 +476,13 @@ pub contract Domains: NonFungibleToken {
   }
 
   pub fun getPrices(): {Int: UFix64} {
-    let cap = self.account.getCapability<&Domains.Registrar{Domains.RegistrarPublic}>(Domains.RegistrarPublicPath)
+    let cap = self.account.getCapability<&Grants.Registrar{Grants.RegistrarPublic}>(Grants.RegistrarPublicPath)
     let collection = cap.borrow() ?? panic("Could not borrow collection")
     return collection.getPrices()
   }
 
   pub fun getVaultBalance(): UFix64 {
-    let cap = self.account.getCapability<&Domains.Registrar{Domains.RegistrarPublic}>(Domains.RegistrarPublicPath)
+    let cap = self.account.getCapability<&Grants.Registrar{Grants.RegistrarPublic}>(Grants.RegistrarPublicPath)
     let registrar = cap.borrow() ?? panic("Could not borrow registrar public")
     return registrar.getVaultBalance()
   }
