@@ -9,7 +9,7 @@ import styles from "../../styles/ManageGrant.module.css";
 import {
   renewGrant,
   updateAddressForGrant,
-  updateBioForGrant,sendFlow
+  updateBioForGrant,sendFlow,updateImgUrlForGrant
 } from "../../flow/transactions";
 
 // constant representing seconds per year
