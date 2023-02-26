@@ -147,7 +147,7 @@ export default function Home() {
               <a href="#!" data-te-ripple-init data-te-ripple-color="light">
                 <img
                   className="rounded-t-lg"
-                  src="https://tecdn.b-cdn.net/img/new/standard/nature/186.jpg"
+                  src={di.imgurl}
                   alt="" />
               </a>
               <div className="p-6">
