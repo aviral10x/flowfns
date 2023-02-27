@@ -321,7 +321,7 @@ export async function registerGrant(name, duration) {
   export async function sendFlow(recepient, amount) {
     return fcl.mutate({
     cadence:SEND_FLOW,
-    args : (arg, t) => [arg(recepient, t.Address), arg(amount, t.UInt64)],
+    args : (arg, t) => [arg(recepient, t.Address), arg(amount, t.UFix64)],
     payer: fcl.authz,
     proposer: fcl.authz,
     authorizations: [fcl.authz],
@@ -333,7 +333,7 @@ const SEND_FLOW=`
 import FungibleToken from 0xFungibleToken
 import FlowToken from 0xFLOW
 
-transaction(recepient: Address, amount: UInt64){
+transaction(recepient: Address, amount: UFix64){
   prepare(signer: AuthAccount){
     let sender = signer.borrow<&FlowToken.Vault>(from: /storage/flowTokenVault)
       ?? panic("Could not borrow Provider reference to the Vault")
