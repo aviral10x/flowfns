@@ -154,13 +154,13 @@ export default function Home() {
               <Link href={`/fund/${di.id}`}>
                 <h5
                   className="mb-2 text-xl font-medium leading-tight text-neutral-800 dark:text-neutral-50">
-                  {di.name}
+                {di.name}
                 </h5></Link>
                 <p className="mb-1 text-base text-neutral-600 dark:text-neutral-200">
                   By {di.owner}
                 </p>
                 <p className="mb-4 text-base text-neutral-600 dark:text-neutral-200">
-                  {di.bio}
+                  {di.bio.slice(0,64)}...
                 </p>
                 <div className='flex flex-col pb-2'>
                  
