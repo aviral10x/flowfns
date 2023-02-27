@@ -277,45 +277,45 @@ export async function registerGrant(name, duration) {
   }
   `;
 
-  export async function transferTokens(amount, recipient) {
+  // export async function transferTokens(amount, recipient) {
 
-    const transactionId = await fcl.mutate({
-      cadence: TRANSFER_TOKENS,
-      args: (arg, t) => [
-        arg(parseFloat(amount).toFixed(2), t.UInt64),
-        arg(recipient, t.Address)
-      ],
-      proposer: fcl.authz,
-      payer: fcl.authz,
-      authorizations: [fcl.authz],
-      limit: 999
-    });
+  //   const transactionId = await fcl.mutate({
+  //     cadence: TRANSFER_TOKENS,
+  //     args: (arg, t) => [
+  //       arg(parseFloat(amount).toFixed(2), t.UInt64),
+  //       arg(recipient, t.Address)
+  //     ],
+  //     proposer: fcl.authz,
+  //     payer: fcl.authz,
+  //     authorizations: [fcl.authz],
+  //     limit: 999
+  //   });
 
-    console.log('Transaction Id', transactionId);
-  }
+  //   console.log('Transaction Id', transactionId);
+  // }
 
-  const TRANSFER_TOKENS =`
-  import FungibleToken from 0xFungibleToken
-  import Grant from 0xGrants
+  // const TRANSFER_TOKENS =`
+  // import FungibleToken from 0xFungibleToken
+  // import Grant from 0xGrants
 
-  transaction(amount: UInt64, recipient: Address) {
-    let SentVault: @FungibleToken.Vault
-    prepare(signer: AuthAccount) {
-        let vaultRef = signer.borrow<&FungibleToken.Vault>(from: FungibleToken.VaultStoragePath)
-                          ?? panic("Could not borrow reference to the owner's Vault!")
+  // transaction(amount: UInt64, recipient: Address) {
+  //   let SentVault: @FungibleToken.Vault
+  //   prepare(signer: AuthAccount) {
+  //       let vaultRef = signer.borrow<&FungibleToken.Vault>(from: FungibleToken.VaultStoragePath)
+  //                         ?? panic("Could not borrow reference to the owner's Vault!")
 
-        self.SentVault <- vaultRef.withdraw(amount: amount)
-    }
+  //       self.SentVault <- vaultRef.withdraw(amount: amount)
+  //   }
 
-    execute {
-        let receiverRef = getAccount(recipient).getCapability(FungibleToken.VaultReceiverPath)
-                            .borrow<&FungibleToken.Vault{FungibleToken.Receiver}>()
-                            ?? panic("Could not borrow receiver reference to the recipient's Vault")
+  //   execute {
+  //       let receiverRef = getAccount(recipient).getCapability(FungibleToken.VaultReceiverPath)
+  //                           .borrow<&FungibleToken.Vault{FungibleToken.Receiver}>()
+  //                           ?? panic("Could not borrow receiver reference to the recipient's Vault")
 
-        receiverRef.deposit(from: <-self.SentVault)
-    }
-  }
-  `;
+  //       receiverRef.deposit(from: <-self.SentVault)
+  //   }
+  // }
+  // `;
 
 
   export async function sendFlow(recepient, amount) {
